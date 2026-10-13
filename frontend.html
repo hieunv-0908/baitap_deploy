@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TechShop - Trình bày sản phẩm công nghệ</title>
+    <style>
+        :root { --bg:#f5f6fa; --ink:#1c2230; --muted:#6b7385; --accent:#4f46e5; --line:#e3e6ee; --red:#dc2626; }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+        [hidden] { display:none !important; }
+
+        /* Thanh trên cùng */
+        header { background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+        .bar { max-width:1100px; margin:auto; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; }
+        .logo { font-weight:800; font-size:1.2rem; }
+        nav { display:flex; gap:8px; }
+        nav button { border:0; background:none; padding:8px 14px; border-radius:8px; cursor:pointer; font:inherit; font-weight:500; color:var(--muted); }
+        nav button:hover { color:var(--accent); }
+        nav button.active { background:#eceafd; color:var(--accent); }
+
+        main { max-width:1100px; margin:auto; padding:32px 20px 60px; }
+        h1 { margin:0 0 6px; font-size:2rem; }
+        h2 { margin:0 0 12px; font-size:1.1rem; }
+        .sub { color:var(--muted); margin:0 0 24px; }
+        #notice { background:#fff7d6; padding:10px 14px; border-radius:8px; margin-bottom:20px; font-size:.9rem; }
+
+        /* Trang chủ */
+        .filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+        .filters button { border:1px solid var(--line); background:#fff; padding:8px 16px; border-radius:999px; cursor:pointer; font:inherit; }
+        .filters button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+        #list { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:20px; }
+        .card { background:#fff; border-radius:14px; overflow:hidden; border:1px solid var(--line); display:flex; flex-direction:column; }
+        .card img { width:100%; aspect-ratio:4/3; object-fit:cover; background:#e9ebf3; }
+        .info { padding:14px; display:flex; flex-direction:column; gap:6px; flex:1; }
+        .name { font-weight:600; }
+        .price { color:var(--accent); font-weight:700; font-size:1.1rem; }
+        .card .info button { margin-top:auto; border:0; background:var(--accent); color:#fff; padding:10px; border-radius:8px; cursor:pointer; font:inherit; }
+        .card .info button:hover { background:#4338ca; }
+        .msg { grid-column:1/-1; text-align:center; color:var(--muted); padding:40px 0; }
+
+        /* Hộp thoại chi tiết */
+        dialog { border:0; border-radius:16px; padding:0; width:min(560px,92vw); }
+        dialog::backdrop { background:rgba(20,24,40,.55); }
+        dialog img { width:100%; aspect-ratio:16/10; object-fit:cover; background:#e9ebf3; display:block; }
+        .detail { padding:20px; }
+        .detail h3 { margin:0 0 4px; font-size:1.4rem; }
+        .cat { color:var(--muted); font-size:.9rem; }
+        .detail pre { white-space:pre-wrap; font:inherit; background:var(--bg); padding:12px; border-radius:8px; margin:12px 0; }
+        .close { margin:0 20px 20px; padding:10px 18px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; font:inherit; }
+
+        /* Quản lý kho */
+        .admin-grid { display:grid; gap:24px; grid-template-columns:340px 1fr; align-items:start; }
+        @media (max-width:860px) { .admin-grid { grid-template-columns:1fr; } }
+        .box { background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px; }
+        label { display:block; margin-top:12px; font-size:.9rem; font-weight:500; }
+        input, select, textarea { width:100%; margin-top:4px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; }
+        input:focus, select:focus, textarea:focus { outline:2px solid var(--accent); border-color:transparent; }
+        .row { display:flex; gap:8px; margin-top:16px; }
+        .btn { padding:10px 16px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; font:inherit; }
+        .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+        .btn.danger { color:var(--red); }
+        table { width:100%; border-collapse:collapse; }
+        th, td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-size:.95rem; }
+        th { color:var(--muted); font-weight:600; }
+        td.act { white-space:nowrap; text-align:right; }
+        td.act .btn { padding:6px 10px; font-size:.85rem; }
+        .wrap { overflow-x:auto; }
+
+        #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; }
+        #toast.err { background:var(--red); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="bar">
+        <span class="logo">TechShop</span>
+        <nav>
+            <button id="navHome" class="active" onclick="show('home')">Trưng bày</button>
+            <button id="navAdmin" onclick="show('admin')">Quản lý kho</button>
+        </nav>
+    </div>
+</header>
+
+<main>
+    <div id="notice" hidden></div>
+
+    <!-- ===== TRANG CHỦ ===== -->
+    <section id="viewHome">
+        <h1>Sản phẩm công nghệ</h1>
+        <p class="sub">Chọn sản phẩm để xem thông số chi tiết.</p>
+        <div class="filters" id="filters"></div>
+        <div id="list"></div>
+    </section>
+
+    <!-- ===== QUẢN LÝ KHO ===== -->
+    <section id="viewAdmin" hidden>
+        <h1 style="margin-bottom:24px">Quản lý kho</h1>
+        <div class="admin-grid">
+            <form class="box" id="form">
+                <h2 id="formTitle">Thêm sản phẩm</h2>
+                <label>Tên sản phẩm <input id="name" required placeholder="Ví dụ: ASUS Vivobook 15"></label>
+                <label>Danh mục
+                    <select id="category">
+                        <option value="Laptop">Laptop</option>
+                        <option value="Smartphone">Smartphone</option>
+                    </select>
+                </label>
+                <label>Giá (VNĐ) <input id="price" type="number" min="0" required placeholder="14490000"></label>
+                <label>Link ảnh <input id="imageUrl" placeholder="https://..."></label>
+                <label>Thông số <textarea id="specs" rows="4" placeholder="CPU: Core i5&#10;RAM: 16GB"></textarea></label>
+                <div class="row">
+                    <button class="btn primary" type="submit" id="submitBtn">Thêm sản phẩm</button>
+                    <button class="btn" type="button" id="cancelBtn" hidden>Hủy sửa</button>
+                </div>
+            </form>
+
+            <div class="box">
+                <h2>Danh sách sản phẩm</h2>
+                <div class="wrap">
+                    <table>
+                        <thead><tr><th>Tên</th><th>Danh mục</th><th>Giá</th><th></th></tr></thead>
+                        <tbody id="rows"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<dialog id="dlg">
+    <div id="dlgBody"></div>
+    <button class="close" onclick="dlg.close()">Đóng</button>
+</dialog>
+<div id="toast" hidden></div>
+
+<script>
+    /* =====================================================================
+       1. CẤU HÌNH + GỌI API (Fetch)  — bám theo API Contract
+       ===================================================================== */
+    const BASE_URL = 'http://localhost:8080/api/v1';
+
+    async function api(path, method = 'GET', body) {
+        const res = await fetch(BASE_URL + path, {
+            method,
+            headers: body ? { 'Content-Type': 'application/json' } : {},
+            body: body ? JSON.stringify(body) : undefined,
+        });
+        if (!res.ok) {
+            let msg = 'HTTP ' + res.status;
+            try { msg = (await res.json()).error || msg; } catch (e) {}
+            throw new Error(msg);
+        }
+        return res.status === 204 ? null : res.json();
+    }
+    const fetchProducts  = (category = '') => {
+        const q = new URLSearchParams({ page: 0, size: 50 });
+        if (category) q.set('category', category);
+        return api('/products?' + q);
+    };
+    const getProductById = id        => api('/products/' + id);
+    const createProduct  = data      => api('/admin/products', 'POST', data);
+    const updateProduct  = (id, data) => api('/admin/products/' + id, 'PUT', data);
+    const deleteProduct  = id        => api('/admin/products/' + id, 'DELETE');
+
+    /* Dữ liệu mẫu: chỉ dùng cho trang chủ khi chưa chạy được backend */
+    const SAMPLE = [
+        { id:1, name:'Oppo Reno 6Z 5G', category:'Smartphone', price:8990000, imageUrl:'', status:'AVAILABLE',
+            specs:'Màn hình: AMOLED 6.4 inch\nChip: Dimensity 800U\nRAM: 8GB\nBộ nhớ: 128GB' },
+        { id:2, name:'ASUS Vivobook 15', category:'Laptop', price:14490000, imageUrl:'', status:'AVAILABLE',
+            specs:'CPU: Core i5-1235U\nRAM: 16GB\nSSD: 512GB\nMàn hình: 15.6 inch FHD' },
+        { id:3, name:'MacBook Air M2', category:'Laptop', price:26990000, imageUrl:'', status:'AVAILABLE',
+            specs:'Chip: Apple M2\nRAM: 8GB\nSSD: 256GB' },
+        { id:4, name:'Samsung Galaxy S23', category:'Smartphone', price:17990000, imageUrl:'', status:'OUT_OF_STOCK',
+            specs:'Chip: Snapdragon 8 Gen 2\nRAM: 8GB\nBộ nhớ: 256GB' },
+    ];
+
+    /* =====================================================================
+       2. TIỆN ÍCH
+       ===================================================================== */
+    const $ = id => document.getElementById(id);
+    const money = n => Number(n).toLocaleString('vi-VN') + ' ₫';
+
+    function h(tag, cls, text) {            // tạo phần tử an toàn (textContent)
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;
+        return e;
+    }
+    function placeholder(name) {            // ảnh thay thế khi chưa có ảnh
+        const t = (name || '?').replace(/[<>&"']/g, '').slice(0, 2).toUpperCase();
+        return 'data:image/svg+xml,' + encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="#e9ebf3"/>` +
+            `<text x="200" y="165" text-anchor="middle" font-family="sans-serif" font-size="48" font-weight="700" fill="#9aa3b8">${t}</text></svg>`);
+    }
+    function img(url, name) {
+        const i = document.createElement('img');
+        i.alt = name || '';
+        i.src = url || placeholder(name);
+        i.onerror = () => { i.onerror = null; i.src = placeholder(name); };
+        return i;
+    }
+    function toast(msg, isErr) {
+        const t = $('toast');
+        t.textContent = msg; t.className = isErr ? 'err' : ''; t.hidden = false;
+        clearTimeout(toast.timer);
+        toast.timer = setTimeout(() => t.hidden = true, 3000);
+    }
+    function showNotice(text) {
+        $('notice').textContent = text;
+        $('notice').hidden = !text;
+    }
+
+    /* =====================================================================
+       3. ĐIỀU HƯỚNG GIỮA 2 MÀN HÌNH
+       ===================================================================== */
+    function show(view) {
+        $('viewHome').hidden = view !== 'home';
+        $('viewAdmin').hidden = view !== 'admin';
+        $('navHome').classList.toggle('active', view === 'home');
+        $('navAdmin').classList.toggle('active', view === 'admin');
+        location.hash = view === 'admin' ? '#admin' : '';
+        if (view === 'admin') loadAdminList(); else loadHome();
+    }
+
+    /* =====================================================================
+       4. TRANG CHỦ: danh sách + chi tiết
+       ===================================================================== */
+    let category = '';
+    let useSample = false;
+
+    async function loadHome() {
+        $('list').replaceChildren(h('p', 'msg', 'Đang tải...'));
+        let items;
+        try {
+            if (useSample) throw new Error('sample');
+            const data = await fetchProducts(category);
+            items = Array.isArray(data) ? data : data.content || [];
+            showNotice('');
+        } catch (e) {
+            useSample = true;
+            showNotice('Chưa kết nối được API ' + BASE_URL + ' - đang hiển thị dữ liệu mẫu.');
+            items = SAMPLE.filter(p => !category || p.category === category);
+        }
+        if (!items.length) { $('list').replaceChildren(h('p', 'msg', 'Chưa có sản phẩm nào.')); return; }
+
+        $('list').replaceChildren(...items.map(p => {
+            const card = h('div', 'card');
+            const info = h('div', 'info');
+            const btn = h('button', '', 'Xem chi tiết');
+            btn.onclick = () => openDetail(p.id);
+            info.append(h('div', 'name', p.name), h('div', 'price', money(p.price)), btn);
+            card.append(img(p.imageUrl, p.name), info);
+            return card;
+        }));
+    }
+
+    async function openDetail(id) {
+        let p;
+        try { p = useSample ? SAMPLE.find(x => x.id === id) : await getProductById(id); }
+        catch (e) { toast('Không tải được chi tiết: ' + e.message, true); return; }
+        const box = h('div', 'detail');
+        box.append(
+            h('h3', '', p.name),
+            h('div', 'cat', p.category || ''),
+            h('div', 'price', money(p.price)),
+            h('pre', '', p.specs || 'Chưa có thông số.'),
+            h('div', 'cat', p.status === 'OUT_OF_STOCK' ? 'Hết hàng' : 'Còn hàng')
+        );
+        $('dlgBody').replaceChildren(img(p.imageUrl, p.name), box);
+        $('dlg').showModal();
+    }
+
+    [['', 'Tất cả'], ['Laptop', 'Laptop'], ['Smartphone', 'Điện thoại']].forEach(([val, label]) => {
+        const b = h('button', val === '' ? 'active' : '', label);
+        b.onclick = () => {
+            category = val;
+            document.querySelectorAll('#filters button').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            loadHome();
+        };
+        $('filters').append(b);
+    });
+    $('dlg').addEventListener('click', e => { if (e.target === $('dlg')) $('dlg').close(); });
+
+    /* =====================================================================
+       5. QUẢN LÝ KHO: thêm / sửa / xóa
+       ===================================================================== */
+    let editingId = null;
+
+    async function loadAdminList() {
+        const tbody = $('rows');
+        try {
+            const data = await fetchProducts();
+            const items = Array.isArray(data) ? data : data.content || [];
+            showNotice('');
+            useSample = false;
+            if (!items.length) {
+                tbody.replaceChildren();
+                const tr = h('tr'); const td = h('td', '', 'Kho đang trống.'); td.colSpan = 4; tr.append(td);
+                tbody.append(tr);
+                return;
+            }
+            tbody.replaceChildren(...items.map(p => {
+                const tr = h('tr');
+                [p.name, p.category || '', money(p.price)].forEach(text => tr.append(h('td', '', text)));
+                const act = h('td', 'act');
+                const edit = h('button', 'btn', 'Sửa');   edit.onclick = () => startEdit(p.id);
+                const del  = h('button', 'btn danger', 'Xóa'); del.onclick = () => removeProduct(p);
+                act.append(edit, ' ', del);
+                tr.append(act);
+                return tr;
+            }));
+        } catch (e) {
+            showNotice('Không kết nối được API ' + BASE_URL + '. Hãy chạy backend (cổng 8080) rồi tải lại trang.');
+            tbody.replaceChildren();
+        }
+    }
+
+    function resetForm() {
+        editingId = null;
+        $('form').reset();
+        $('formTitle').textContent = 'Thêm sản phẩm';
+        $('submitBtn').textContent = 'Thêm sản phẩm';
+        $('cancelBtn').hidden = true;
+    }
+
+    async function startEdit(id) {
+        try {
+            const p = await getProductById(id);
+            editingId = id;
+            $('name').value = p.name || '';
+            $('category').value = p.category || 'Laptop';
+            $('price').value = p.price ?? '';
+            $('imageUrl').value = p.imageUrl || '';
+            $('specs').value = p.specs || '';
+            $('formTitle').textContent = 'Sửa sản phẩm #' + id;
+            $('submitBtn').textContent = 'Lưu thay đổi';
+            $('cancelBtn').hidden = false;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (e) { toast('Không tải được sản phẩm: ' + e.message, true); }
+    }
+
+    async function removeProduct(p) {
+        if (!confirm('Xóa "' + p.name + '"?')) return;
+        try { await deleteProduct(p.id); toast('Đã xóa sản phẩm'); loadAdminList(); }
+        catch (e) { toast('Xóa thất bại: ' + e.message, true); }
+    }
+
+    $('form').addEventListener('submit', async e => {
+        e.preventDefault();                         // chặn gửi form mặc định
+        const data = {                              // gom dữ liệu form thành JSON
+            name: $('name').value.trim(),
+            category: $('category').value,
+            price: Number($('price').value),
+            imageUrl: $('imageUrl').value.trim(),
+            specs: $('specs').value.trim(),
+        };
+        try {
+            if (editingId == null) { await createProduct(data); toast('Đã thêm sản phẩm'); }
+            else { await updateProduct(editingId, data); toast('Đã lưu thay đổi'); }
+            resetForm();
+            loadAdminList();
+        } catch (err) { toast('Lỗi: ' + err.message, true); }
+    });
+    $('cancelBtn').addEventListener('click', resetForm);
+
+    /* =====================================================================
+       6. KHỞI ĐỘNG
+       ===================================================================== */
+    show(location.hash === '#admin' ? 'admin' : 'home');
+</script>
+</body>
+</html>
